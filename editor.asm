@@ -12,6 +12,26 @@ int 10h
 start:
     mov ah, 0
     int 16h            ; Espera tecla
+
+    ; Validamos teclas especiales estas se almacenan en ah
+ 
+    ; Flecha izquierda
+    cmp ah, 4Bh
+    je flecha_izq
+
+    ; Flecha Derecha
+    cmp ah, 4Dh
+    je flecha_der
+
+    ; Flecha arriba
+    cmp ah, 48h
+    je flecha_arr
+
+    ; Flecha abajo
+    cmp ah, 50h
+    je flecha_abj
+
+    
     ; ESC
     cmp al, 27
     je salir
@@ -80,15 +100,66 @@ comprobar_scroll:
     mov dx, 184Fh       ; Esquina inferior derecha (24,79)
     int 10h
 
-    ; Mantener cursor en última línea mov dh, 24 continuar: ret
+    ; Mantener cursor en última línea 
+    mov dh, 24 
+
+continuar: 
+    ret
 
 set_cursor:
     mov ah, 02h
     int 10h
     jmp start
 
+flecha_izq:
+    ; Comparamos si estamos al inicio de la línea
+    cmp dl, 0
+    ; Si es diferente de 0 significa que no estamos al principio de la línea.
+    ; Entonces saltamos a mover_mismo_renglon_izq
+    jne mover_mismo_renglon_izq
+    cmp dh, 0
+    je start
+
+    dec dh
+    mov dl, 79
+    jmp mover_cursor
+
+mover_mismo_renglon_izq:
+    dec dl
+    jmp mover_cursor
+
+flecha_der: 
+    cmp dl, 79
+    jne mover_mismo_renglon_der
+    cmp dh, 24
+    je start
+
+    inc dh
+    mov dl, 0
+    jmp mover_cursor
+
+mover_mismo_renglon_der: 
+    inc dl
+    jmp mover_cursor
+
+flecha_arr: 
+    cmp dh, 0
+    je start
+    dec dh
+    jmp mover_cursor
+
+flecha_abj:
+    cmp dh, 24
+    je start
+    inc dh
+    jmp mover_cursor
+
+mover_cursor:
+    mov ah, 02h
+    int 10h
+    jmp start
+
 salir:
-    ; Opcional: limpiar pantalla al salir
     mov ax, 0600h
     mov bh, 07h
     mov cx, 0

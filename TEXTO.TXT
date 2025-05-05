@@ -1,1 +1,1 @@
-Esto es una prueba para confirmar el guardado.
+print("Hola")

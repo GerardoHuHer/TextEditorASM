@@ -1,11 +1,10 @@
 org 100h
 jmp start
 
-
 buffer db 4000 dup('$')  ; Espacio para texto
 buffer_len dw 0          ; Cuántos caracteres hay
 filename db "texto.txt",0
-msg_guardado db "Se guardo correctamente.$"  ; ← Mensaje a mostrar
+msg_guardado db "Se guardo correctamente.$"  ; Mensaje de guardado
 
 ; Inicializar posición del cursor
 mov ah, 02h
@@ -16,7 +15,7 @@ int 10h
 
 start:
     mov ah, 0
-    int 16h            ; Espera tecla
+    int 16h            ; Interrupción para esperar tecla
 
     cmp al, 0          ; Tecla extendida?
     jne seguir_tecla
@@ -52,7 +51,7 @@ seguir_tecla:
     mov ah, 0Eh
     int 10h
 
-    ; Guardar en buffer
+    ; Guardar en buffer los carácteres
     mov si, [buffer_len]
     mov [buffer + si], al
     inc word [buffer_len]
@@ -62,7 +61,7 @@ seguir_tecla:
     cmp dl, 80
     jl set_cursor
 
-    ; Fin de línea → salto
+    ; Fin de línea
     mov dl, 0
     inc dh
     call comprobar_scroll
@@ -190,7 +189,7 @@ guardar_buffer:
     mov dx, filename
     int 21h
     jc error_guardado
-    mov bx, ax          ; Handle
+    mov bx, ax         
 
     mov ah, 40h         ; Escribir
     mov cx, [buffer_len]

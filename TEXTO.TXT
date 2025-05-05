@@ -1,0 +1,5 @@
+printstd::cout 
+putStrLn
+printLn
+Console.log
+Console.WriteLine

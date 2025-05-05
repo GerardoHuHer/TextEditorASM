@@ -1,36 +1,43 @@
 org 100h
+jmp start
+
+
+buffer db 4000 dup('$')  ; Espacio para texto
+buffer_len dw 0          ; Cuántos caracteres hay
+filename db "texto.txt",0
+msg_guardado db "Se guardo correctamente.$"  ; ← Mensaje a mostrar
 
 ; Inicializar posición del cursor
-mov ah, 02h ; FUnción para centrarnos en el cursor
-mov bh, 0 ; Deshabilita el cursor
-; Posiciones del cursor en filas y columnas
-mov dh, 0 ; Filas
-mov dl, 0 ; Columnas
-; Interrupción 10 
+mov ah, 02h
+mov bh, 0
+mov dh, 0
+mov dl, 0
 int 10h
 
 start:
     mov ah, 0
     int 16h            ; Espera tecla
 
-    ; Validamos teclas especiales estas se almacenan en ah
-    ; Flecha izquierda
-    cmp ah, 4Bh
-    je flecha_izq
+    cmp al, 0          ; Tecla extendida?
+    jne seguir_tecla
 
-    ; Flecha Derecha
-    cmp ah, 4Dh
-    je flecha_der
-
-    ; Flecha arriba
-    cmp ah, 48h
+    ; Leer segunda parte de la tecla extendida
+    int 16h
+    ; Verificar F2
+    cmp ah, 3Ch        ; F2
+    je guardar_buffer
+    ; Verificar teclas de flecha
+    cmp ah, 48h        ; Flecha arriba
     je flecha_arr
-
-    ; Flecha abajo
-    cmp ah, 50h
+    cmp ah, 50h        ; Flecha abajo
     je flecha_abj
+    cmp ah, 4Bh        ; Flecha izquierda
+    je flecha_izq
+    cmp ah, 4Dh        ; Flecha derecha
+    je flecha_der
+    jmp start
 
-    
+seguir_tecla:
     ; ESC
     cmp al, 27
     je salir
@@ -43,20 +50,36 @@ start:
 
     ; Imprimir carácter
     mov ah, 0Eh
-    int 10h ; interrupción para imprimir
+    int 10h
+
+    ; Guardar en buffer
+    mov si, [buffer_len]
+    mov [buffer + si], al
+    inc word [buffer_len]
 
     ; Avanzar columna
     inc dl
     cmp dl, 80
     jl set_cursor
 
-    ; Fin de línea → saltar de línea
+    ; Fin de línea → salto
     mov dl, 0
     inc dh
     call comprobar_scroll
     jmp set_cursor
 
 salto_linea:
+    ; Agregar salto de línea al buffer
+    mov al, 13
+    mov si, [buffer_len]
+    mov [buffer + si], al
+    inc word [buffer_len]
+
+    mov al, 10
+    mov si, [buffer_len]
+    mov [buffer + si], al
+    inc word [buffer_len]
+
     mov dl, 0
     inc dh
     call comprobar_scroll
@@ -66,7 +89,7 @@ borrar:
     cmp dl, 0
     jne borrar_mismo_renglon
     cmp dh, 0
-    je start            ; No retroceder si estás en la esquina superior
+    je start
     dec dh
     mov dl, 79
     jmp borrar_caracter
@@ -75,33 +98,31 @@ borrar_mismo_renglon:
     dec dl
 
 borrar_caracter:
-    ; Coloca cursor en nueva posición
     mov ah, 02h
     int 10h
 
-    ; Escribe un espacio para "borrar"
     mov ah, 0Ah
     mov al, ' '
     int 10h
 
-    ; Volver a colocar cursor en esa posición
     mov ah, 02h
     int 10h
+
+    ; Eliminar del buffer
+    cmp word [buffer_len], 0
+    je start
+    dec word [buffer_len]
     jmp start
 
 comprobar_scroll:
     cmp dh, 25
     jl continuar
-    ; Scroll una línea hacia arriba
-    mov ax, 0601h       ; Scroll 1 línea hacia arriba
-    mov bh, 07h         ; Color gris sobre negro
-    mov cx, 0000h       ; Esquina superior izquierda
-    mov dx, 184Fh       ; Esquina inferior derecha (24,79)
+    mov ax, 0601h
+    mov bh, 07h
+    mov cx, 0000h
+    mov dx, 184Fh
     int 10h
-
-    ; Mantener cursor en última línea 
-    mov dh, 24 
-
+    mov dh, 24
 continuar: 
     ret
 
@@ -111,14 +132,10 @@ set_cursor:
     jmp start
 
 flecha_izq:
-    ; Comparamos si estamos al inicio de la línea
     cmp dl, 0
-    ; Si es diferente de 0 significa que no estamos al principio de la línea.
-    ; Entonces saltamos a mover_mismo_renglon_izq
     jne mover_mismo_renglon_izq
     cmp dh, 0
     je start
-
     dec dh
     mov dl, 79
     jmp mover_cursor
@@ -132,7 +149,6 @@ flecha_der:
     jne mover_mismo_renglon_der
     cmp dh, 24
     je start
-
     inc dh
     mov dl, 0
     jmp mover_cursor
@@ -167,3 +183,31 @@ salir:
 
     mov ah, 4Ch
     int 21h
+
+guardar_buffer:
+    mov ah, 3Ch         ; Crear archivo
+    mov cx, 0
+    mov dx, filename
+    int 21h
+    jc error_guardado
+    mov bx, ax          ; Handle
+
+    mov ah, 40h         ; Escribir
+    mov cx, [buffer_len]
+    mov dx, buffer
+    int 21h
+    jc error_guardado
+
+    mov ah, 3Eh         ; Cerrar archivo
+    int 21h
+
+    ; Mostrar mensaje de éxito
+    mov ah, 09h
+    mov dx, msg_guardado
+    int 21h
+
+    jmp start
+
+error_guardado:
+    ; Aquí podrías mostrar un mensaje de error si quieres
+    jmp start

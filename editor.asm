@@ -14,7 +14,6 @@ start:
     int 16h            ; Espera tecla
 
     ; Validamos teclas especiales estas se almacenan en ah
- 
     ; Flecha izquierda
     cmp ah, 4Bh
     je flecha_izq

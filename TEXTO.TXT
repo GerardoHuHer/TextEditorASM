@@ -1,5 +1,1 @@
-printstd::cout 
-putStrLn
-printLn
-Console.log
-Console.WriteLine
+Esto es una prueba para confirmar el guardado.

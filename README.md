@@ -26,7 +26,6 @@ Copy the repositorie in your computer with:
 
 Open dosbox: 
 - `dosbox`
-It will open dosbox software, there you will execute the following command
 - `mount c your_project_directory`
 - `c:`
 - `editor.com`

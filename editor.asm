@@ -146,81 +146,83 @@ set_cursor:
     jmp start ; saltamos a start
 
 flecha_izq:
-    cmp dl, 0
-    jne mover_mismo_renglon_izq
-    cmp dh, 0
-    je start
-    dec dh
-    mov dl, 79
-    jmp mover_cursor
+    cmp dl, 0 ; Comprobamos si la columna es igual a 0
+    jne mover_mismo_renglon_izq ; Si es diferente de 0 llamamos al label mover_mismo_renglon_izq
+    cmp dh, 0 ; Comparamos si la fila es 0
+    je start ; Si es igual a 0 saltamos a start
+    dec dh ; Restamos en caso de no ser cero decrementamos las filas
+    mov dl, 79 ; Movemos el cursor a la fila anterior en la ultima columna
+    jmp mover_cursor ; saltamos al label move_cursor
 
 mover_mismo_renglon_izq:
-    dec dl
-    jmp mover_cursor
+    dec dl ; En caso de estar en el mismo renglon restamos las columnas
+    jmp mover_cursor ; saltamos al label mover_cursor
 
 flecha_der: 
-    cmp dl, 79
-    jne mover_mismo_renglon_der
-    cmp dh, 24
-    je start
-    inc dh
-    mov dl, 0
-    jmp mover_cursor
+    cmp dl, 79 ; Comprobamos si estamos en la ultima columna
+    jne mover_mismo_renglon_der ; si es diferente de 79 que es el limite de de columnas nos saltamos al label mover_mismo_renglon_der
+    cmp dh, 24 ; Comprobamos que la posicion de las filas
+    je start ; Si es igual a 24 saltamos al label start
+    inc dh ; Incrementamos la posicion de la fila
+    mov dl, 0 ; Movemos 0 a las columnas
+    jmp mover_cursor ; Llamamos al label mover_cursor
 
 mover_mismo_renglon_der: 
-    inc dl
+    inc dl ; Incrementamos la posicion de las columnas
     jmp mover_cursor
 
 flecha_arr: 
-    cmp dh, 0
-    je start
-    dec dh
-    jmp mover_cursor
+    cmp dh, 0 ; Comprobamos que las filas sean igual a cero
+    je start ; Si es igual a 0 saltamos a start
+    dec dh ; Si es diferente restamos una fila
+    jmp mover_cursor ; Saltamos a mover_cursor para posicionar el cursor en su nueva posicion
 
 flecha_abj:
-    cmp dh, 24
-    je start
-    inc dh
-    jmp mover_cursor
+    cmp dh, 24 ; Comprobamos si ya estamos en el ultimo renglon
+    je start ; Si es igual saltamos a start
+    inc dh ; Si es diferente incrementamos la posicion de las filas
+    jmp mover_cursor ; Saltamos a mover_cursor para posicionar el cursor
 
 mover_cursor:
-    mov ah, 02h
-    int 10h
-    jmp start
+    ; Label para posicionar el cursor en su nuevas coordenadas
+    mov ah, 02h ; Parametro para la interrupcion 10
+    int 10h ; Provocamos la interrupcion
+    jmp start ; Saltamos al label start
 
 salir:
-    mov ax, 0600h
-    mov bh, 07h
-    mov cx, 0
-    mov dx, 184Fh
-    int 10h
+    ; Label para salir
+    mov ax, 0600h ; Pasamos como parametro a la interrupción
+    mov bh, 07h ; movemos 07h al registro bh para el estilo gris de la pantalla
+    mov cx, 0 ; Restauramos la terminal en la posición que debería de estar de inicio
+    mov dx, 184Fh ; Restauramos la terminal en la posición que debería de estar de fin
+    int 10h ; Llamamos a la interrupción
 
-    mov ah, 4Ch
-    int 21h
+    mov ah, 4Ch ; Almacenamos el paramatro 4Ch para terminar la ejecución del programa
+    int 21h ; Interrupción en la BIOS
 
 guardar_buffer:
-    mov ah, 3Ch         ; Crear archivo
-    mov cx, 0
-    mov dx, filename
-    int 21h
-    jc error_guardado
-    mov bx, ax         
+    mov ah, 3Ch ; Parametro 3Ch para hacer la interrupción
+    mov cx, 0 ; Atributo de solo lectura en el archivo
+    mov dx, filename ; Nombre del archivo
+    int 21h ; Llamada a la interrupción
+    jc error_guardado ; Saltar al error si hubo un fallo
+    mov bx, ax ; Guardamos la respuesta en BX
 
-    mov ah, 40h         ; Escribir
-    mov cx, [buffer_len]
-    mov dx, buffer
-    int 21h
-    jc error_guardado
+    mov ah, 40h ; Pasamos como parametro 40h a la interrupción 21h
+    mov cx, [buffer_len] ; Esta será la longitud del buffer a guardar
+    mov dx, buffer ; La dirección del buffer a escribir
+    int 21h ; Escribimos el buffer en el archivo
+    jc error_guardado ; Saltamos un error en caso que haya alguna falla
 
-    mov ah, 3Eh         ; Cerrar archivo
-    int 21h
+    mov ah, 3Eh ; Parametro para cerrar el archivo
+    int 21h ; Interrupción para cerrar el archivo
 
     ; Mostrar mensaje de éxito
-    mov ah, 09h
-    mov dx, msg_guardado
-    int 21h
+    mov ah, 09h ; parametro de salir para la interrupción 21h
+    mov dx, msg_guardado ; Movemos el mensaje a dx para con la interrupción 21h imprimirlo en pantalla
+    int 21h ; Ejecutamos la interrupción 21h
 
-    jmp start
+    jmp start ; Saltamos a start 
 
 error_guardado:
     ; Aquí podrías mostrar un mensaje de error si quieres
